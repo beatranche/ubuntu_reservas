@@ -273,6 +273,9 @@ if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
 
 # Sección de últimas reservas con eliminación
 st.subheader("📅 Últimas 5 reservas registradas")
+if st.button("🔄 Actualizar reservas"):
+    st.cache_data.clear()
+    st.rerun()
 try:
     datos = cargar_datos()
     if not datos.empty:
