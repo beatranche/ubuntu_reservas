@@ -312,12 +312,14 @@ try:
                                     worksheet.delete_rows(sheet_row_number)
                                     
                                     # 3. Limpiar cachés y estados
-                                    st.cache_data.clear()
+                                    
                                     st.session_state.show_delete_confirm = False
                                     
                                     # 4. Recargar datos y forzar actualización
+                                    st.cache_data.clear()
                                     datos = cargar_datos()  # Carga datos frescos
                                     st.rerun()  # Vuelve a renderizar todo
+                                    break
                                     
                                 else:
                                     st.error("La reserva ya fue eliminada")
