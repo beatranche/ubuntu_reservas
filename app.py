@@ -7,8 +7,8 @@ import os
 from gspread_client import get_gsheet_client
 
 # Configuración de Google Sheets
-SPREADSHEET_ID = "1Vw2vPRxLHqdS71LI28FAJbdfbKu7joPk9yqgdOp2vyg"
-SHEET_NAME = "reservas-ubuntu"
+SPREADSHEET_ID = st.secrets["google_sheets"]["spreadsheet_id"]
+SHEET_NAME = st.secrets["google_sheets"]["sheet_name"]
 ACTIVIDADES_MANUALES = ["Grupos", "Senderismo"]
 
 @st.cache_data

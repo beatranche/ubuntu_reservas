@@ -1,1 +1,25 @@
+# Streamlit secrets
 .streamlit/secrets.toml
+
+# Archivos Python temporales
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Entornos virtuales
+venv/
+.env/
+.venv/
+
+# Archivos de configuración del IDE
+.vscode/
+.idea/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# GitHub Codespaces / containers
+.devcontainer/
+
