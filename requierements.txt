@@ -1,5 +1,0 @@
-streamlit
-pandas
-python-dateutil
-gspread
-google-auth

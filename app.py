@@ -303,13 +303,28 @@ try:
                                 spreadsheet = gc.open_by_key(SPREADSHEET_ID)
                                 worksheet = spreadsheet.worksheet(SHEET_NAME)
                                 
-                                # Sumar 2 porque: fila 1 = headers, índice empieza en 0
-                                worksheet.delete_rows(index + 2)
-                                st.session_state['show_delete_confirm'] = False
-                                st.rerun()
+                                # 1. Obtener ID real de la fila en Sheets
+                                all_data = worksheet.get_all_records()
+                                sheet_row_number = index + 2  # Header + índice base 0
                                 
+                                # 2. Validar que la fila existe antes de eliminar
+                                if len(all_data) > index:
+                                    worksheet.delete_rows(sheet_row_number)
+                                    
+                                    # 3. Limpiar cachés y estados
+                                    st.cache_data.clear()
+                                    st.session_state.show_delete_confirm = False
+                                    
+                                    # 4. Recargar datos y forzar actualización
+                                    datos = cargar_datos()  # Carga datos frescos
+                                    st.rerun()  # Vuelve a renderizar todo
+                                    
+                                else:
+                                    st.error("La reserva ya fue eliminada")
+
                             except Exception as e:
                                 st.error(f"Error al eliminar: {str(e)}")
+                                st.session_state.show_delete_confirm = False
                     with col_cancel:
                         if st.button("❌ Cancelar", key=f"cancel_delete_{index}"):
                             st.session_state['show_delete_confirm'] = False
