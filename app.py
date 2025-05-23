@@ -317,7 +317,7 @@ try:
                                     
                                     # 4. Recargar datos y forzar actualización
                                     st.cache_data.clear()
-                                    datos = cargar_datos()  # Carga datos frescos
+                                    datos = cargar_datos.__wrapped__() # Carga datos frescos
                                     st.rerun()  # Vuelve a renderizar todo
                                     break
                                     
