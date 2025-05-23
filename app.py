@@ -272,72 +272,75 @@ if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
             st.session_state.mostrar_resumen = False
 
 # Sección de últimas reservas con eliminación
-st.subheader("📅 Últimas 5 reservas registradas")
-if st.button("🔄 Actualizar reservas"):
-    st.cache_data.clear()
-    st.rerun()
-try:
-    datos = cargar_datos()
-    if not datos.empty:
-        datos['Fecha Actividad'] = datos['Fecha Actividad'].dt.strftime('%d/%m/%Y')
-        datos['Fecha Reserva'] = datos['Fecha Reserva'].dt.strftime('%d/%m/%Y %H:%M')
-        
-        for index, row in datos.head(5).iterrows():
-            cols = st.columns([5,1])
-            with cols[0]:
-                st.markdown(f"""
-                **{row['Nombre']}** - {row['Actividad']}<br>
-                📅 {row['Fecha Actividad']} ⏰ {row['Hora inicio Actividad']}<br>
-                👥 {row['Personas']} personas | 💶 {row['Precio']}€
-                """, unsafe_allow_html=True)
-            
-            with cols[1]:
-                if st.button("🗑️", key=f"delete_{index}"):
-                    st.session_state['delete_index'] = index
-                    st.session_state['show_delete_confirm'] = True
+col_r, col_u = st.columns([6,1])
+with col_r:
+    st.subheader("📋 Ultimas 5 reservas registradas")
+with col_u:
+    if st.button("🔄", help="Actualizar reservas", key="refresh"):
+        st.cache_data.clear()
+        st.rerun()
+        try:
+            datos = cargar_datos()
+            if not datos.empty:
+                datos['Fecha Actividad'] = datos['Fecha Actividad'].dt.strftime('%d/%m/%Y')
+                datos['Fecha Reserva'] = datos['Fecha Reserva'].dt.strftime('%d/%m/%Y %H:%M')
                 
-                if st.session_state.get('show_delete_confirm', False) and st.session_state.get('delete_index') == index:
-                    st.warning("¿Seguro que quieres eliminar esta reserva?")
-                    col_confirm, col_cancel = st.columns(2)
-                    with col_confirm:
-                        if st.button("✅ Confirmar", key=f"confirm_delete_{index}"):
-                            try:
-                                gc = get_gsheet_client()
-                                spreadsheet = gc.open_by_key(SPREADSHEET_ID)
-                                worksheet = spreadsheet.worksheet(SHEET_NAME)
-                                
-                                # 1. Obtener ID real de la fila en Sheets
-                                all_data = worksheet.get_all_records()
-                                sheet_row_number = index + 2  # Header + índice base 0
-                                
-                                # 2. Validar que la fila existe antes de eliminar
-                                if len(all_data) > index:
-                                    worksheet.delete_rows(sheet_row_number)
-                                    
-                                    # 3. Limpiar cachés y estados
-                                    
-                                    st.session_state.show_delete_confirm = False
-                                    
-                                    # 4. Recargar datos y forzar actualización
-                                    st.cache_data.clear()
-                                    datos = cargar_datos.__wrapped__() # Carga datos frescos
-                                    st.rerun()  # Vuelve a renderizar todo
-                                    break
-                                    
-                                else:
-                                    st.error("La reserva ya fue eliminada")
+                for index, row in datos.head(5).iterrows():
+                    cols = st.columns([5,1])
+                    with cols[0]:
+                        st.markdown(f"""
+                        **{row['Nombre']}** - {row['Actividad']}<br>
+                        📅 {row['Fecha Actividad']} ⏰ {row['Hora inicio Actividad']}<br>
+                        👥 {row['Personas']} personas | 💶 {row['Precio']}€
+                        """, unsafe_allow_html=True)
+                    
+                    with cols[1]:
+                        if st.button("🗑️", key=f"delete_{index}"):
+                            st.session_state['delete_index'] = index
+                            st.session_state['show_delete_confirm'] = True
+                        
+                        if st.session_state.get('show_delete_confirm', False) and st.session_state.get('delete_index') == index:
+                            st.warning("¿Seguro que quieres eliminar esta reserva?")
+                            col_confirm, col_cancel = st.columns(2)
+                            with col_confirm:
+                                if st.button("✅ Confirmar", key=f"confirm_delete_{index}"):
+                                    try:
+                                        gc = get_gsheet_client()
+                                        spreadsheet = gc.open_by_key(SPREADSHEET_ID)
+                                        worksheet = spreadsheet.worksheet(SHEET_NAME)
+                                        
+                                        # 1. Obtener ID real de la fila en Sheets
+                                        all_data = worksheet.get_all_records()
+                                        sheet_row_number = index + 2  # Header + índice base 0
+                                        
+                                        # 2. Validar que la fila existe antes de eliminar
+                                        if len(all_data) > index:
+                                            worksheet.delete_rows(sheet_row_number)
+                                            
+                                            # 3. Limpiar cachés y estados
+                                            
+                                            st.session_state.show_delete_confirm = False
+                                            
+                                            # 4. Recargar datos y forzar actualización
+                                            st.cache_data.clear()
+                                            datos = cargar_datos.__wrapped__() # Carga datos frescos
+                                            st.rerun()  # Vuelve a renderizar todo
+                                            break
+                                            
+                                        else:
+                                            st.error("La reserva ya fue eliminada")
 
-                            except Exception as e:
-                                st.error(f"Error al eliminar: {str(e)}")
-                                st.session_state.show_delete_confirm = False
-                    with col_cancel:
-                        if st.button("❌ Cancelar", key=f"cancel_delete_{index}"):
-                            st.session_state['show_delete_confirm'] = False
-                            st.rerun()
-    else:
-        st.info("📭 Aún no hay reservas registradas")
-except Exception as e:
-    st.error(f"Error al cargar datos: {str(e)}")
+                                    except Exception as e:
+                                        st.error(f"Error al eliminar: {str(e)}")
+                                        st.session_state.show_delete_confirm = False
+                            with col_cancel:
+                                if st.button("❌ Cancelar", key=f"cancel_delete_{index}"):
+                                    st.session_state['show_delete_confirm'] = False
+                                    st.rerun()
+            else:
+                st.info("📭 Aún no hay reservas registradas")
+        except Exception as e:
+            st.error(f"Error al cargar datos: {str(e)}")
 
 # Módulo de Calendario
 st.sidebar.header("🗓️ Filtros del Calendario")
