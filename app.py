@@ -17,22 +17,22 @@ def cargar_datos():
         gc = get_gsheet_client()
         spreadsheet = gc.open_by_key(SPREADSHEET_ID)
         worksheet = spreadsheet.worksheet(SHEET_NAME)
-        
+
         # Obtener todos los registros
         records = worksheet.get_all_records()
-        
+
         if not records:
             return pd.DataFrame(columns=[
                 "Nombre", "Actividad", "Fecha Actividad", "Hora inicio Actividad",
                 "Duración", "Personas", "Contacto", "Email o Teléfono", 
                 "Precio", "Notas", "Fecha Reserva", "Precio Unitario"
             ])
-            
+
         df = pd.DataFrame(records)
         df['Fecha Actividad'] = pd.to_datetime(df['Fecha Actividad'], dayfirst=True)
         df['Fecha Reserva'] = pd.to_datetime(df['Fecha Reserva'], dayfirst=True)
         return df.sort_values('Fecha Reserva', ascending=False)
-        
+
     except Exception as e:
         st.error(f"Error al cargar datos: {str(e)}")
         st.exception(e)
@@ -64,7 +64,7 @@ def calcular_precio(actividad, duracion, personas, precio_unitario=0, adultos=0,
     if actividad == "Alquiler equipos ferrata":
         dias = int(duracion.split()[0])
         return 15 * dias * personas
-    
+
     tarifas = {
         "Kayak": {"1 hora": 10, "2 horas": 18, "Todo el día": 30},
         "Paddle surf": {"1 hora": 15, "2 horas": 25, "Todo el día": 30},
@@ -197,7 +197,7 @@ if st.button("🧾 Revisar y confirmar"):
 
 if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
     st.subheader("✅ Revisa tu reserva")
-    
+
     # Crear diccionario de detalles
     detalles = {
         "Nombre": st.session_state["nombre"],
@@ -218,7 +218,7 @@ if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
 
     for campo, valor in detalles.items():
         st.write(f"**{campo}:** {valor}")
-    
+
     col1, col2 = st.columns([1, 4])
     with col1:
         if st.button("💾 Confirmar reserva"):
@@ -226,11 +226,11 @@ if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
                 gc = get_gsheet_client()
                 spreadsheet = gc.open_by_key(SPREADSHEET_ID)
                 worksheet = spreadsheet.worksheet(SHEET_NAME)
-                
+
                 # Calcular precio unitario
                 actividad_actual = st.session_state["actividad"]
                 precio_final_val = precio_final
-                
+
                 if actividad_actual == "Hidropedales":
                     duracion_horas = int(st.session_state["duracion"].split()[0])
                     precio_unitario = precio_final_val / duracion_horas if duracion_horas > 0 else 0
@@ -238,7 +238,7 @@ if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
                     precio_unitario = st.session_state.get("precio_unitario", 0.0)
                 else:
                     precio_unitario = precio_final_val / total_personas if total_personas > 0 else 0
-                
+
                 nueva_fila = [
                     st.session_state["nombre"],
                     st.session_state["actividad"],
@@ -253,17 +253,17 @@ if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
                     datetime.now().strftime("%d/%m/%Y %H:%M"),
                     round(precio_unitario, 2)
                 ]
-                
+
                 worksheet.append_row(nueva_fila)
                 st.session_state.reserva_guardada = True
                 st.session_state.mostrar_resumen = False
                 st.cache_data.clear()
-                
+
                 for key in [k for k in default_values.keys() if k != "reserva_guardada"]:
                     if key in st.session_state:
                         del st.session_state[key]
                 st.rerun()
-                
+
             except Exception as e:
                 st.error(f"Error al guardar: {str(e)}")
 
@@ -272,75 +272,73 @@ if st.session_state.mostrar_resumen and not st.session_state.reserva_guardada:
             st.session_state.mostrar_resumen = False
 
 # Sección de últimas reservas con eliminación
-col_r, col_u = st.columns([6,1])
-with col_r:
-    st.subheader("📋 Ultimas 5 reservas registradas")
-with col_u:
-    if st.button("🔄", help="Actualizar reservas", key="refresh"):
-        st.cache_data.clear()
-        st.rerun()
-        try:
-            datos = cargar_datos()
-            if not datos.empty:
-                datos['Fecha Actividad'] = datos['Fecha Actividad'].dt.strftime('%d/%m/%Y')
-                datos['Fecha Reserva'] = datos['Fecha Reserva'].dt.strftime('%d/%m/%Y %H:%M')
-                
-                for index, row in datos.head(5).iterrows():
-                    cols = st.columns([5,1])
-                    with cols[0]:
-                        st.markdown(f"""
-                        **{row['Nombre']}** - {row['Actividad']}<br>
-                        📅 {row['Fecha Actividad']} ⏰ {row['Hora inicio Actividad']}<br>
-                        👥 {row['Personas']} personas | 💶 {row['Precio']}€
-                        """, unsafe_allow_html=True)
-                    
-                    with cols[1]:
-                        if st.button("🗑️", key=f"delete_{index}"):
-                            st.session_state['delete_index'] = index
-                            st.session_state['show_delete_confirm'] = True
-                        
-                        if st.session_state.get('show_delete_confirm', False) and st.session_state.get('delete_index') == index:
-                            st.warning("¿Seguro que quieres eliminar esta reserva?")
-                            col_confirm, col_cancel = st.columns(2)
-                            with col_confirm:
-                                if st.button("✅ Confirmar", key=f"confirm_delete_{index}"):
-                                    try:
-                                        gc = get_gsheet_client()
-                                        spreadsheet = gc.open_by_key(SPREADSHEET_ID)
-                                        worksheet = spreadsheet.worksheet(SHEET_NAME)
-                                        
-                                        # 1. Obtener ID real de la fila en Sheets
-                                        all_data = worksheet.get_all_records()
-                                        sheet_row_number = index + 2  # Header + índice base 0
-                                        
-                                        # 2. Validar que la fila existe antes de eliminar
-                                        if len(all_data) > index:
-                                            worksheet.delete_rows(sheet_row_number)
-                                            
-                                            # 3. Limpiar cachés y estados
-                                            
-                                            st.session_state.show_delete_confirm = False
-                                            
-                                            # 4. Recargar datos y forzar actualización
-                                            st.cache_data.clear()
-                                            datos = cargar_datos.__wrapped__() # Carga datos frescos
-                                            st.rerun()  # Vuelve a renderizar todo
-                                            break
-                                            
-                                        else:
-                                            st.error("La reserva ya fue eliminada")
+st.subheader("📅 Últimas 5 reservas registradas")
+try:
+    datos = cargar_datos()
+    if not datos.empty:
+        datos['Fecha Actividad'] = datos['Fecha Actividad'].dt.strftime('%d/%m/%Y')
+        datos['Fecha Reserva'] = datos['Fecha Reserva'].dt.strftime('%d/%m/%Y %H:%M')
+        
+        for index, row in datos.head(5).iterrows():
+            cols = st.columns([5,1])
+            with cols[0]:
+                st.markdown(f"""
+                **{row['Nombre']}** - {row['Actividad']}<br>
+                📅 {row['Fecha Actividad']} ⏰ {row['Hora inicio Actividad']}<br>
+                👥 {row['Personas']} personas | 💶 {row['Precio']}€
+                """, unsafe_allow_html=True)
+            
+            with cols[1]:
+                if st.button("🗑️", key=f"delete_{index}"):
+                    st.session_state['delete_index'] = index
+                    st.session_state['show_delete_confirm'] = True
 
-                                    except Exception as e:
-                                        st.error(f"Error al eliminar: {str(e)}")
-                                        st.session_state.show_delete_confirm = False
-                            with col_cancel:
-                                if st.button("❌ Cancelar", key=f"cancel_delete_{index}"):
-                                    st.session_state['show_delete_confirm'] = False
-                                    st.rerun()
-            else:
-                st.info("📭 Aún no hay reservas registradas")
-        except Exception as e:
-            st.error(f"Error al cargar datos: {str(e)}")
+                if st.session_state.get('show_delete_confirm', False) and st.session_state.get('delete_index') == index:
+                    st.warning("¿Seguro que quieres eliminar esta reserva?")
+                    col_confirm, col_cancel = st.columns(2)
+                    with col_confirm:
+                        if st.button("✅ Confirmar", key=f"confirm_delete_{index}"):
+                            try:
+                                gc = get_gsheet_client()
+                                spreadsheet = gc.open_by_key(SPREADSHEET_ID)
+                                worksheet = spreadsheet.worksheet(SHEET_NAME)
+                                
+                                # 1. Obtener ID real de la fila en Sheets
+                                all_data = worksheet.get_all_records()
+                                sheet_row_number = index + 2  # Header + índice base 0
+                                
+                                # 2. Validar que la fila existe antes de eliminar
+                                if len(all_data) > index:
+                                    worksheet.delete_rows(sheet_row_number)
+                                    
+                                    # 3. Limpiar cachés y estados
+                                    
+                                    st.session_state.show_delete_confirm = False
+                                    
+                                    # 4. Recargar datos y forzar actualización
+                                    st.cache_data.clear()
+                                    datos = cargar_datos.__wrapped__() # Carga datos frescos
+                                    st.rerun()  # Vuelve a renderizar todo
+                                    break
+                                    
+                                else:
+                                    st.error("La reserva ya fue eliminada")
+
+                            except Exception as e:
+                                st.error(f"Error al eliminar: {str(e)}")
+                                st.session_state.show_delete_confirm = False
+                    with col_cancel:
+                        if st.button("❌ Cancelar", key=f"cancel_delete_{index}"):
+                            st.session_state['show_delete_confirm'] = False
+                            st.rerun()
+    else:
+        st.info("📭 Aún no hay reservas registradas")
+except Exception as e:
+    st.error(f"Error al cargar datos: {str(e)}")
+
+if st.button("🔄 Actualizar reservas"):
+    st.cache_data.clear()
+    st.rerun()
 
 # Módulo de Calendario
 st.sidebar.header("🗓️ Filtros del Calendario")
@@ -397,11 +395,11 @@ for week in month_days:
                 actividades_dia = datos_filtrados[
                     datos_filtrados['Fecha Actividad'].dt.date == current_date.date()
                 ] if not datos_filtrados.empty else pd.DataFrame()
-                
+
                 # Celda del día
                 st.markdown(f"<div class='day-cell'>", unsafe_allow_html=True)
                 st.subheader(f"{day}")
-                
+
                 if not actividades_dia.empty:
                     for _, actividad in actividades_dia.iterrows():
                         st.markdown(f"""
@@ -413,5 +411,3 @@ for week in month_days:
                         """, unsafe_allow_html=True)
                 else:
                     st.markdown("<small>Sin actividades</small>", unsafe_allow_html=True)
-                
-                st.markdown("</div>", unsafe_allow_html=True)
