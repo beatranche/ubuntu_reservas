@@ -9,6 +9,11 @@ st.set_page_config(
 )
 
 def main():
+    # Verificar autenticación primero
+    if not check_auth():
+        st.stop()
+    
+    # Resto de la aplicación
     st.title("🏕️ Ubuntu Aventuras - Sistema de Gestión")
     
     # Verificar si hay una reserva siendo editada
@@ -24,6 +29,7 @@ def main():
         
         with tabs[0]:
             mostrar_formulario()
+            ultimas_reservas()
         
         with tabs[1]:
             mostrar_agenda()
@@ -56,6 +62,11 @@ def main():
     
     if st.sidebar.button("🔄 Actualizar Datos"):
         st.cache_data.clear()
+        st.rerun()
+    
+    # Botón para cerrar sesión
+    if st.sidebar.button("🚪 Cerrar sesión"):
+        st.session_state.logged_in = False
         st.rerun()
 
 if __name__ == "__main__":

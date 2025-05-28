@@ -4,11 +4,67 @@ from datetime import datetime, time, timedelta
 import calendar
 from dateutil.relativedelta import relativedelta
 from gspread_client import get_gsheet_client
+import hashlib
 
 # Configuración desde secrets
 SPREADSHEET_ID = st.secrets["google_sheets"]["spreadsheet_id"]
 SHEET_NAME = st.secrets["google_sheets"]["sheet_name"]
 ACTIVIDADES_MANUALES = ["Grupos", "Senderismo"]
+
+# Configuración de usuarios (en un sistema real deberían estar en una base de datos segura)
+USERS = {
+    "admin": {
+        "password_hash": hashlib.sha256("ubuntu2024".encode()).hexdigest(),
+        "role": "admin"
+    },
+    "usuario": {
+        "password_hash": hashlib.sha256("aventuras123".encode()).hexdigest(),
+        "role": "user"
+    }
+}
+
+def check_auth():
+    """Verifica la autenticación del usuario"""
+    # Si ya está autenticado, continuar
+    if st.session_state.get('logged_in'):
+        return True
+    
+    # Mostrar formulario de login
+    st.title("🔐 Acceso al Sistema - Ubuntu Aventuras")
+    st.markdown("---")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        with st.form("login_form"):
+            username = st.text_input("👤 Usuario")
+            password = st.text_input("🔑 Contraseña", type="password")
+            submit = st.form_submit_button("🚪 Entrar")
+            
+            if submit:
+                if username in USERS:
+                    # Verificar contraseña
+                    input_password_hash = hashlib.sha256(password.encode()).hexdigest()
+                    if input_password_hash == USERS[username]["password_hash"]:
+                        st.session_state.logged_in = True
+                        st.session_state.current_user = username
+                        st.session_state.user_role = USERS[username]["role"]
+                        st.rerun()
+                    else:
+                        st.error("Contraseña incorrecta")
+                else:
+                    st.error("Usuario no encontrado")
+    
+    # Información de usuarios de prueba (solo para desarrollo)
+    with col2:
+        with st.expander("ℹ️ Usuarios de prueba"):
+            st.info("""
+            **Usuarios disponibles:**
+            - Usuario: `admin` | Contraseña: `ubuntu2024`
+            - Usuario: `usuario` | Contraseña: `aventuras123`
+            """)
+    
+    return False
 
 @st.cache_data(ttl=300)
 def cargar_datos():
@@ -567,3 +623,67 @@ def mostrar_calendario():
                                     st.rerun()
                         else:
                             st.markdown("<small>Sin actividades</small>", unsafe_allow_html=True)
+
+def ultimas_reservas():
+    st.subheader("📅 Últimas 5 reservas registradas")
+    
+    try:
+        datos = cargar_datos()
+        if not datos.empty:
+            datos['Fecha Actividad'] = datos['Fecha Actividad'].dt.strftime('%d/%m/%Y')
+            datos['Fecha Reserva'] = datos['Fecha Reserva'].dt.strftime('%d/%m/%Y %H:%M')
+            
+            for index, row in datos.head(5).iterrows():
+                cols = st.columns([5,1])
+                with cols[0]:
+                    st.markdown(f"""
+                    **{row['Nombre']}** - {row['Actividad']}<br>
+                    📅 {row['Fecha Actividad']} ⏰ {row['Hora inicio Actividad']}<br>
+                    👥 {row['Personas']} personas | 💶 {row['Precio']}€
+                    """, unsafe_allow_html=True)
+                
+                with cols[1]:
+                    # Usar clave única para cada botón
+                    if st.button("🗑️", key=f"delete_{index}_{row['Nombre']}"):
+                        st.session_state['delete_index'] = index
+                        st.session_state['show_delete_confirm'] = True
+
+            # Mostrar confirmación después de renderizar todas las reservas
+            if st.session_state.get('show_delete_confirm', False):
+                index = st.session_state.get('delete_index')
+                if index is not None:
+                    st.warning("¿Seguro que quieres eliminar esta reserva?")
+                    col_confirm, col_cancel = st.columns(2)
+                    with col_confirm:
+                        if st.button("✅ Confirmar", key=f"confirm_delete_{index}"):
+                            try:
+                                gc = get_gsheet_client()
+                                spreadsheet = gc.open_by_key(SPREADSHEET_ID)
+                                worksheet = spreadsheet.worksheet(SHEET_NAME)
+                                
+                                # Eliminar fila (index + 2 porque las hojas empiezan en 1 y hay headers)
+                                worksheet.delete_rows(index + 2)
+                                
+                                # Limpiar estados y caché
+                                st.session_state.show_delete_confirm = False
+                                st.session_state.delete_index = None
+                                st.cache_data.clear()
+                                st.success("✅ Reserva eliminada correctamente")
+                                st.rerun()
+                                
+                            except Exception as e:
+                                st.error(f"Error al eliminar: {str(e)}")
+                    with col_cancel:
+                        if st.button("❌ Cancelar", key=f"cancel_delete_{index}"):
+                            st.session_state.show_delete_confirm = False
+                            st.rerun()
+        else:
+            st.info("📭 Aún no hay reservas registradas")
+            
+        # Botón de actualización fuera del loop
+        if st.button("🔄 Actualizar reservas", key="refresh_reservations"):
+            st.cache_data.clear()
+            st.rerun()
+            
+    except Exception as e:
+        st.error(f"Error al cargar datos: {str(e)}")
