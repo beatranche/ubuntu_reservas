@@ -7,6 +7,18 @@ st.set_page_config(
     page_icon="🏕️",
     layout="wide"
 )
+# =====================================================
+# ELIMINAR MENÚ SUPERIOR DERECHO Y PIE DE PÁGINA
+# =====================================================
+hide_menu_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+.stDeployButton {display:none;}
+div[data-testid="stToolbar"] {display:none!important;}
+</style>
+"""
+st.markdown(hide_menu_style, unsafe_allow_html=True)
 
 def main():
     # Inicializar estados de sesión para autenticación
