@@ -9,9 +9,27 @@ st.set_page_config(
 )
 
 def main():
-    # Verificar autenticación primero
-    if not check_auth():
-        st.stop()
+    # Inicializar estados de sesión para autenticación
+    if 'logged_in' not in st.session_state:
+        st.session_state.logged_in = False
+    if 'mostrar_registro' not in st.session_state:
+        st.session_state.mostrar_registro = False
+    if 'mostrar_login' not in st.session_state:
+        st.session_state.mostrar_login = True
+    
+    # Mostrar formulario de registro si está activo
+    if st.session_state.mostrar_registro:
+        mostrar_formulario_registro()
+        return
+    
+    # Mostrar formulario de login si no está logueado
+    if not st.session_state.logged_in and st.session_state.mostrar_login:
+        mostrar_login()
+        return
+    
+    # =================================================================
+    # A PARTIR DE AQUÍ SOLO SE EJECUTA SI EL USUARIO ESTÁ AUTENTICADO
+    # =================================================================
     
     # Resto de la aplicación
     st.title("🏕️ Ubuntu Aventuras - Sistema de Gestión")
@@ -67,6 +85,7 @@ def main():
     # Botón para cerrar sesión
     if st.sidebar.button("🚪 Cerrar sesión"):
         st.session_state.logged_in = False
+        st.session_state.mostrar_login = True  # Mostrar login al cerrar sesión
         st.rerun()
 
 if __name__ == "__main__":
