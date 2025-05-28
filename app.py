@@ -12,10 +12,29 @@ st.set_page_config(
 # =====================================================
 hide_menu_style = """
 <style>
+/* Ocultar menú hamburguesa */
 #MainMenu {visibility: hidden;}
+
+/* Ocultar pie de página */
 footer {visibility: hidden;}
+
+/* Ocultar botón "Manage App" */
 .stDeployButton {display:none;}
-div[data-testid="stToolbar"] {display:none!important;}
+
+/* Ocultar toolbar superior derecho (share, edit, etc) */
+div[data-testid="stToolbar"] {display:none !important;}
+
+/* Ocultar botón flotante "Manage App" */
+div[data-testid="stDeployButton"] {display:none !important;}
+
+/* Ocultar botones de GitHub */
+div[data-testid="baseButton-header"] {display:none !important;}
+
+/* Ocultar el botón de "Reportar un problema" */
+div[data-testid="stStatusWidget"] {display:none !important;}
+
+/* Ocultar espacio vacío que queda al ocultar elementos */
+.stApp > header {display: none !important;}
 </style>
 """
 st.markdown(hide_menu_style, unsafe_allow_html=True)
