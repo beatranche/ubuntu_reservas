@@ -53,6 +53,10 @@ def main():
                 if key in st.session_state:
                     del st.session_state[key]
             st.rerun()
+    
+    if st.sidebar.button("🔄 Actualizar Datos"):
+        st.cache_data.clear()
+        st.rerun()
 
 if __name__ == "__main__":
     main()
