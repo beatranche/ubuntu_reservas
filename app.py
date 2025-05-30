@@ -3,6 +3,9 @@ import streamlit as st
 from functions.auth import check_auth, mostrar_login, mostrar_formulario_registro
 from pages import reservas, agenda, calendario, reportes
 
+# Limpiar caché al iniciar
+st.cache_data.clear()
+
 # Configuración de la página
 st.set_page_config(
     page_title="Ubuntu Aventuras - Sistema de Gestión",
