@@ -3,8 +3,8 @@ import streamlit as st
 from datetime import datetime, timedelta
 import pandas as pd
 from streamlit_calendar import calendar
-from .data_utils import cargar_datos, SPREADSHEET_ID, SHEET_NAME
-from .gspread_client import get_gsheet_client
+from functions.data_utils import cargar_datos, SPREADSHEET_ID, SHEET_NAME
+from functions.gspread_client import get_gsheet_client
 
 # Paleta de colores para actividades
 COLORES_ACTIVIDADES = {

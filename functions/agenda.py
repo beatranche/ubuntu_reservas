@@ -2,7 +2,7 @@
 
 import streamlit as st
 from datetime import datetime, timedelta
-from .data_utils import cargar_datos
+from functions.data_utils import cargar_datos
 
 def mostrar_agenda():
     st.header("📅 Agenda de Actividades")

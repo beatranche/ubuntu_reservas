@@ -3,7 +3,7 @@
 import streamlit as st
 import pandas as pd
 import hashlib
-from .data_utils import cargar_usuarios, registrar_usuario
+from functions.data_utils import cargar_usuarios, registrar_usuario
 
 def check_auth():
     """Verifica la autenticación del usuario"""

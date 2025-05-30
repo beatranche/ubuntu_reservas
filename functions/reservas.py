@@ -1,10 +1,48 @@
 # functions/reservas.py
-
 import streamlit as st
 from datetime import datetime, time
-from .data_utils import cargar_datos, ACTIVIDADES_MANUALES
-from .gspread_client import get_gsheet_client
-from .data_utils import SPREADSHEET_ID, SHEET_NAME
+from functions.gspread_client import get_gsheet_client
+from functions.data_utils import SHEET_NAME, SPREADSHEET_ID, cargar_datos, ACTIVIDADES_MANUALES
+
+# Funciones movidas a este archivo
+def calcular_precio(actividad, duracion, personas, precio_unitario=0, adultos=0, niños=0):
+    if actividad in ACTIVIDADES_MANUALES:
+        return precio_unitario * personas
+    if "Ferrata" in actividad and actividad != "Alquiler equipos ferrata":
+        return 49 * personas
+    if actividad == "Alquiler equipos ferrata":
+        dias = int(duracion.split()[0])
+        return 15 * dias * personas
+
+    tarifas = {
+        "Kayak": {"1 hora": 10, "2 horas": 18, "Todo el día": 30},
+        "Paddle surf": {"1 hora": 15, "2 horas": 25, "Todo el día": 30},
+        "Hidropedales": {"1 hora": 30, "2 horas": 50},
+        "Ebikes": {"1 hora": 15, "Medio día": 30, "Todo el día": 50},
+        "Ruta Bisontes": {"Adulto": 59, "Niño": 49}
+    }
+
+    if actividad == "Ruta Bisontes":
+        return (tarifas["Ruta Bisontes"]["Adulto"] * adultos) + (tarifas["Ruta Bisontes"]["Niño"] * niños)
+    elif actividad == "Hidropedales":
+        return tarifas["Hidropedales"].get(duracion, 0)
+    else:
+        return tarifas.get(actividad, {}).get(duracion, 0) * personas
+
+def validar_campos_obligatorios():
+    campos_requeridos = {
+        "nombre": "Nombre completo",
+        "actividad": "Actividad",
+        "fecha": "Fecha de actividad",
+        "hora_inicio": "Hora de inicio",
+        "duracion": "Duración",
+    }
+    faltantes = [nombre for key, nombre in campos_requeridos.items() 
+                if not st.session_state.get(key)]
+    if faltantes:
+        st.error(f"🚨 Campos obligatorios faltantes: {', '.join(faltantes)}")
+        return False
+    return True
 
 def mostrar_formulario():
     st.header("📝 Nueva Reserva")
@@ -195,22 +233,6 @@ def guardar_reserva(precio_final, total_personas):
 
     except Exception as e:
         st.error(f"Error al guardar: {str(e)}")
-
-
-def validar_campos_obligatorios():
-    campos_requeridos = {
-        "nombre": "Nombre completo",
-        "actividad": "Actividad",
-        "fecha": "Fecha de actividad",
-        "hora_inicio": "Hora de inicio",
-        "duracion": "Duración",
-    }
-    faltantes = [nombre for key, nombre in campos_requeridos.items() 
-                if not st.session_state.get(key)]
-    if faltantes:
-        st.error(f"🚨 Campos obligatorios faltantes: {', '.join(faltantes)}")
-        return False
-    return True
 
 def ultimas_reservas():
     st.subheader("📅 Últimas 5 reservas registradas")

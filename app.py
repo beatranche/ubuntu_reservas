@@ -1,7 +1,7 @@
 # app.py
 import streamlit as st
 from functions.auth import check_auth, mostrar_login, mostrar_formulario_registro
-from pages import reservas, agenda, calendario, reportes  # Importación corregida
+from pages import reservas, agenda, calendario, reportes
 
 # Configuración de la página
 st.set_page_config(
@@ -37,7 +37,7 @@ def main():
     )
     
     if pagina == "Reservas":
-        reservas.mostrar()  # Acceso directo al módulo
+        reservas.mostrar()
     elif pagina == "Agenda":
         agenda.mostrar()
     elif pagina == "Calendario":

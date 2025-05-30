@@ -1,8 +1,7 @@
 # functions/clientes.py
-
 import streamlit as st
 from datetime import datetime
-from .data_utils import cargar_clientes, guardar_cliente
+from functions.data_utils import cargar_clientes, guardar_cliente
 
 def mostrar_formulario_cliente():
     st.header("Formulario de Clientes")
