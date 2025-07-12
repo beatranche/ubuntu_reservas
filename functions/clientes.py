@@ -1,7 +1,9 @@
 # functions/clientes.py
+# functions/clientes.py
 import streamlit as st
 from datetime import datetime
 from functions.data_utils import cargar_clientes, guardar_cliente
+from functions.reservas import calcular_precio, ACTIVIDADES_MANUALES
 
 def mostrar_formulario_cliente():
     st.header("Formulario de Clientes")
@@ -10,35 +12,56 @@ def mostrar_formulario_cliente():
         st.cache_data.clear()
         st.rerun()    
     
+    # Campos que afectan el precio - FUERA del formulario para que se actualicen automáticamente
+    actividad = st.selectbox("Actividad*", [
+        "Kayak", "Paddle surf", "Hidropedales", "Ruta Bisontes", 
+        "Ebikes","Alquiler equipos ferrata", "Grupos", "Senderismo"
+    ], key="actividad_select")
+    
+    duracion = st.selectbox("Duración*", ["1 hora", "2 horas", "Medio día", "Todo el día"], key="duracion_select")
+    
+    personas = st.number_input("Número de Personas*", min_value=1, max_value=50, value=1, key="personas_input")
+    
+    # Cálculo automático del precio en tiempo real
+    precio_calculado = calcular_precio(
+        actividad,
+        duracion,
+        personas,
+        0.0  # precio base para cálculo
+    )
+    
+    # Campo de precio editable que se actualiza automáticamente
+    precio_final = st.number_input(
+        "💰 Precio final (editable)*",
+        value=float(precio_calculado),
+        min_value=0.0,
+        step=0.01,
+        format="%.2f",
+        help="Este precio se calcula automáticamente, pero puedes editarlo si es necesario",
+        key="precio_input"
+    )
+    
     with st.form("form_cliente", clear_on_submit=True):
         col1, col2 = st.columns(2)
         
         with col1:
             id_cliente = st.text_input("ID Cliente*")
-            sexo = st.selectbox("Sexo*", ["Masculino", "Femenino", "Otro", "Prefiero no decirlo"])
+            sexo = st.selectbox("Sexo*", ["Masculino", "Femenino"])
             fecha_nacimiento = st.date_input("Fecha de Nacimiento*", min_value=datetime(1900,1,1))
-            ciudad = st.text_input("Ciudad*")
+            ciudad = st.text_input("Ciudad*", value="León")
             pais = st.text_input("País*", value="España")
         
         with col2:
-            actividad = st.selectbox("Actividad*", [
-                "Kayak", "Paddle surf", "Hidropedales", "Ruta Bisontes", 
-                "Ebikes", "Ferrata Cistierna", "Ferrata Sabero", 
-                "Ferrata Valdeón", "Alquiler equipos ferrata", "Grupos", "Senderismo"
-            ])
             fecha_actividad = st.date_input("Fecha de Actividad*", min_value=datetime(1900,1,1))
             hora_inicio = st.time_input("Hora de Inicio*")
-            duracion = st.selectbox("Duración*", ["1 hora", "2 horas", "Medio día", "Todo el día"])
-            personas = st.number_input("Número de Personas*", min_value=1, max_value=50, value=1)
-            precio = st.number_input("Precio Total (€)*", min_value=0.0, value=0.0)
         
         notas = st.text_area("Notas Adicionales")
         
         submitted = st.form_submit_button("💾 Guardar Cliente")
         
-        if submitted:
+        if submitted:  
             # Validar campos obligatorios
-            if not all([id_cliente, sexo, fecha_nacimiento, ciudad, pais, actividad, fecha_actividad, hora_inicio, duracion, personas, precio]):
+            if not all([id_cliente, sexo, fecha_nacimiento, ciudad, pais, actividad, fecha_actividad, hora_inicio, duracion, personas]):
                 st.error("Por favor complete todos los campos obligatorios (*)")
             else:
                 cliente_data = {
@@ -52,7 +75,7 @@ def mostrar_formulario_cliente():
                     'hora_inicio': hora_inicio.strftime("%H:%M"),
                     'duracion': duracion,
                     'personas': personas,
-                    'precio': precio,
+                    'precio': precio_final,
                     'notas': notas
                 }
                 

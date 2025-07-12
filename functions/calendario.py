@@ -33,7 +33,8 @@ def mostrar_calendario_responsive():
     
     # Preparar eventos para el calendario
     eventos = []
-    for idx, row in datos.iterrows():
+    for index, row in datos.iterrows():
+        resourceId = index
         fecha_actividad = row['Fecha Actividad']
         hora_inicio = datetime.strptime(row['Hora inicio Actividad'], '%H:%M:%S').time()
         start_datetime = datetime.combine(fecha_actividad, hora_inicio)
@@ -46,9 +47,9 @@ def mostrar_calendario_responsive():
             "start": start_datetime.isoformat(),
             "end": end_datetime.isoformat(),
             "color": COLORES_ACTIVIDADES.get(row['Actividad'], "#CCCCCC"),
-            "id": str(idx),  # Usar 'id' en lugar de 'resourceId'
+            "id": str(resourceId),  # Usar 'id' en lugar de 'resourceId'
             "extendedProps": {  # Propiedades adicionales
-                "index": idx,
+                "index": resourceId,
                 "actividad": row['Actividad'],
                 "nombre": row['Nombre']
             }
